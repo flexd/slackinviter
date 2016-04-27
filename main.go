@@ -115,7 +115,7 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if lname == "" {
-		http.Error(w, "Lissing last name", http.StatusPreconditionFailed)
+		http.Error(w, "Missing last name", http.StatusPreconditionFailed)
 		return
 	}
 	if email == "" {
