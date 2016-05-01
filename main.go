@@ -36,7 +36,7 @@ func init() {
 	// Check if we are missing vital config values
 	if *captchaSitekey == "REPLACEME" || *captchaSecret == "REPLACEME" || *slackToken == "REPLACEME" {
 		flag.PrintDefaults()
-		return
+		log.Fatal("Missing required input values")
 	}
 	// Init stuff
 	captcha = recaptcha.New(*captchaSecret)
