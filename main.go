@@ -33,11 +33,6 @@ var statsMutex sync.RWMutex // Guards slack statistics variables
 
 func init() {
 	flag.Parse()
-	// Check if we are missing vital config values
-	if *captchaSitekey == "REPLACEME" || *captchaSecret == "REPLACEME" || *slackToken == "REPLACEME" {
-		flag.PrintDefaults()
-		log.Fatal("Missing required input values")
-	}
 	// Init stuff
 	captcha = recaptcha.New(*captchaSecret)
 	api = slack.New(*slackToken)
@@ -135,13 +130,17 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Check if we are missing vital config values
+	if *captchaSitekey == "REPLACEME" || *captchaSecret == "REPLACEME" || *slackToken == "REPLACEME" {
+		log.Fatalln("Missing required input values")
+	}
 	log.SetPrefix("slackinvite:")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("/", homepage)
-	log.Println("listening on ", *listenAddr)
-	err := http.ListenAndServe(*listenAddr, handlers.CombinedLoggingHandler(os.Stdout, mux))
+	log.Println("listening on port", *listenAddr)
+	err := http.ListenAndServe(":"+*listenAddr, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		panic(err)
 	}
