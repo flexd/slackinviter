@@ -1,0 +1,24 @@
+{
+  "name": "Slackinviter",
+  "description": "Let people invite themselves to your Slack",
+  "logo": "https://i.imgur.com/odDO1Fx.png",
+  "keywords": ["go", "slack"],
+  "image": "heroku/go:1.6",
+  "mount_dir": "http://bitbucket.org/flexd/slackinviter",
+  "website": "https://bitbucket.org/flexd/slackinviter",
+  "repository": "https://bitbucket.org/flexd/slackinviter",
+  "env": {
+    "SLACK_TOKEN": {
+      "description": "A Slack API token (find it on https://api.slack.com/web)",
+      "required": true
+    },
+    "CAPTCHA_SITEKEY": {
+      "description": "Recaptcha sitekey",
+      "required": true
+    },
+    "CAPTCHA_SECRET": {
+      "description": "Recaptcha secret key",
+      "required": true
+    }
+  }
+}
