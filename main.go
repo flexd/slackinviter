@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"flag"
 	"log"
 	"net"
@@ -30,6 +31,16 @@ var listenAddr = flag.String("listenAddr", ":8887", "Address to listen on")
 var userCount int
 var activeUserCount int
 var statsMutex sync.RWMutex // Guards slack statistics variables
+
+var requests = expvar.NewInt("requests")
+var inviteErrors = expvar.NewInt("invite_errors")
+var missingFirstName = expvar.NewInt("missing_first_name")
+var missingLastName = expvar.NewInt("missing_last_name")
+var missingEmail = expvar.NewInt("missing_email")
+var missingCoC = expvar.NewInt("missing_code_of_conduct")
+var successfulCaptcha = expvar.NewInt("successful_captchas")
+var failedCaptcha = expvar.NewInt("failed_captchas")
+var invalidCaptcha = expvar.NewInt("invalid_captchas")
 
 func init() {
 	flag.Parse()
@@ -94,10 +105,12 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 	valid, err := captcha.Verify(captchaResponse, remoteIP)
 	if err != nil {
 		http.Error(w, "Error validating recaptcha.. Did you click it?", http.StatusPreconditionFailed)
+		failedCaptcha.Add(1)
 		return
 	}
 	if !valid {
 		http.Error(w, "Invalid recaptcha", http.StatusInternalServerError)
+		invalidCaptcha.Add(1)
 		return
 
 	}
@@ -107,23 +120,28 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 	coc := r.FormValue("coc")
 	if fname == "" {
 		http.Error(w, "Missing first name", http.StatusPreconditionFailed)
+		missingFirstName.Add(1)
 		return
 	}
 	if lname == "" {
 		http.Error(w, "Missing last name", http.StatusPreconditionFailed)
+		missingLastName.Add(1)
 		return
 	}
 	if email == "" {
 		http.Error(w, "Missing email", http.StatusPreconditionFailed)
+		missingEmail.Add(1)
 		return
 	}
 	if coc != "1" {
 		http.Error(w, "You need to accept the code of conduct", http.StatusPreconditionFailed)
+		missingCoC.Add(1)
 		return
 	}
 	err = api.InviteToTeam("Gophers", fname, lname, email)
 	if err != nil {
 		log.Println("InviteToTeam error:", err)
+		inviteErrors.Add(1)
 		http.Error(w, "Error inviting you :-(", http.StatusInternalServerError)
 		return
 	}
