@@ -15,6 +15,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/nlopes/slack"
 	"github.com/oxtoacart/bpool"
+	"github.com/paulbellamy/ratecounter"
 )
 
 var captcha *recaptcha.Recaptcha
@@ -32,6 +33,8 @@ var userCount int
 var activeUserCount int
 var statsMutex sync.RWMutex // Guards slack statistics variables
 
+var counter *ratecounter.RateCounter
+var hitsPerMinute = expvar.NewInt("hits_per_minute")
 var requests = expvar.NewInt("requests")
 var inviteErrors = expvar.NewInt("invite_errors")
 var missingFirstName = expvar.NewInt("missing_first_name")
@@ -43,6 +46,7 @@ var failedCaptcha = expvar.NewInt("failed_captchas")
 var invalidCaptcha = expvar.NewInt("invalid_captchas")
 
 func init() {
+	counter = ratecounter.NewRateCounter(1 * time.Minute)
 	flag.Parse()
 	// Init stuff
 	captcha = recaptcha.New(*captchaSecret)
@@ -77,6 +81,8 @@ func pollSlack() {
 
 // Homepage renders the homepage
 func homepage(w http.ResponseWriter, r *http.Request) {
+	counter.Incr(1)
+	hitsPerMinute.Set(counter.Rate())
 	statsMutex.RLock()
 	data := map[string]interface{}{"SiteKey": *captchaSitekey, "UserCount": userCount, "ActiveCount": activeUserCount}
 	statsMutex.RUnlock()
@@ -100,7 +106,12 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	captchaResponse := r.FormValue("g-recaptcha-response")
-	remoteIP, _, _ := net.SplitHostPort(r.RemoteAddr)
+	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		failedCaptcha.Add(1)
+		return
+	}
 
 	valid, err := captcha.Verify(captchaResponse, remoteIP)
 	if err != nil {
@@ -146,7 +157,20 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
+func onlyLocalhost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		if host == "127.0.0.1" {
+			next.ServeHTTP(w, r)
+		} else {
+			http.Error(w, http.StatusText(404), 404)
+		}
+	})
+}
 func main() {
 	// Check if we are missing vital config values
 	if *captchaSitekey == "REPLACEME" || *captchaSecret == "REPLACEME" || *slackToken == "REPLACEME" {
@@ -157,6 +181,7 @@ func main() {
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("/", homepage)
+	mux.Handle("/debug/vars", onlyLocalhost(http.DefaultServeMux))
 	log.Println("listening on port", *listenAddr)
 	err := http.ListenAndServe(":"+*listenAddr, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
