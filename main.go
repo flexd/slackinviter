@@ -2,7 +2,6 @@ package main
 
 import (
 	"expvar"
-	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/go-recaptcha/recaptcha"
 	"github.com/gorilla/handlers"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
 	"github.com/oxtoacart/bpool"
 	"github.com/paulbellamy/ratecounter"
@@ -23,36 +23,66 @@ var api *slack.Client
 var bufpool *bpool.BufferPool
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
 
-var captchaSitekey = flag.String("captchaSitekey", "REPLACEME", "reCaptcha Sitekey")
-var captchaSecret = flag.String("captchaSecret", "REPLACEME", "reCaptcha Secret")
-var slackToken = flag.String("slackToken", "REPLACEME", "Slack API Token")
-var listenAddr = flag.String("listenAddr", ":8887", "Address to listen on")
-
 // Slack statistics
 var userCount int
 var activeUserCount int
 var statsMutex sync.RWMutex // Guards slack statistics variables
 
+var m = expvar.NewMap("metrics")
 var counter *ratecounter.RateCounter
-var hitsPerMinute = expvar.NewInt("hits_per_minute")
-var requests = expvar.NewInt("requests")
-var inviteErrors = expvar.NewInt("invite_errors")
-var missingFirstName = expvar.NewInt("missing_first_name")
-var missingLastName = expvar.NewInt("missing_last_name")
-var missingEmail = expvar.NewInt("missing_email")
-var missingCoC = expvar.NewInt("missing_code_of_conduct")
-var successfulCaptcha = expvar.NewInt("successful_captchas")
-var failedCaptcha = expvar.NewInt("failed_captchas")
-var invalidCaptcha = expvar.NewInt("invalid_captchas")
+var hitsPerMinute expvar.Int
+var requests expvar.Int
+var inviteErrors expvar.Int
+var missingFirstName expvar.Int
+var missingLastName expvar.Int
+var missingEmail expvar.Int
+var missingCoC expvar.Int
+var successfulCaptcha expvar.Int
+var failedCaptcha expvar.Int
+var invalidCaptcha expvar.Int
+
+// config
+var c Specification
+
+type Specification struct {
+	Port           string `required:"true"`
+	CaptchaSitekey string `required:"true"`
+	CaptchaSecret  string `required:"true"`
+	SlackToken     string `required:"true"`
+}
 
 func init() {
+	err := envconfig.Process("slackinviter", &c)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	counter = ratecounter.NewRateCounter(1 * time.Minute)
-	flag.Parse()
+	m.Set("hits_per_minute", &hitsPerMinute)
+	m.Set("requests", &requests)
+	m.Set("invite_errors", &inviteErrors)
+	m.Set("missing_first_name", &missingFirstName)
+	m.Set("missing_last_name", &missingLastName)
+	m.Set("missing_email", &missingEmail)
+	m.Set("missing_coc", &missingCoC)
+	m.Set("failed_captcha", &failedCaptcha)
+	m.Set("invalid_captcha", &invalidCaptcha)
+	m.Set("successful_captcha", &successfulCaptcha)
 	// Init stuff
-	captcha = recaptcha.New(*captchaSecret)
-	api = slack.New(*slackToken)
+	captcha = recaptcha.New(c.CaptchaSecret)
+	api = slack.New(c.SlackToken)
 	bufpool = bpool.NewBufferPool(64)
+}
+func main() {
 	go pollSlack()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/invite/", handleInvite)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	mux.HandleFunc("/", homepage)
+	mux.Handle("/debug/vars", onlyLocalhost(http.DefaultServeMux))
+	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
 func pollSlack() {
 	for {
@@ -83,8 +113,9 @@ func pollSlack() {
 func homepage(w http.ResponseWriter, r *http.Request) {
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
+	requests.Add(1)
 	statsMutex.RLock()
-	data := map[string]interface{}{"SiteKey": *captchaSitekey, "UserCount": userCount, "ActiveCount": activeUserCount}
+	data := map[string]interface{}{"SiteKey": c.CaptchaSitekey, "UserCount": userCount, "ActiveCount": activeUserCount}
 	statsMutex.RUnlock()
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
@@ -108,45 +139,46 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 	captchaResponse := r.FormValue("g-recaptcha-response")
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		failedCaptcha.Add(1)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	valid, err := captcha.Verify(captchaResponse, remoteIP)
 	if err != nil {
-		http.Error(w, "Error validating recaptcha.. Did you click it?", http.StatusPreconditionFailed)
 		failedCaptcha.Add(1)
+		http.Error(w, "Error validating recaptcha.. Did you click it?", http.StatusPreconditionFailed)
 		return
 	}
 	if !valid {
-		http.Error(w, "Invalid recaptcha", http.StatusInternalServerError)
 		invalidCaptcha.Add(1)
+		http.Error(w, "Invalid recaptcha", http.StatusInternalServerError)
 		return
 
 	}
+	successfulCaptcha.Add(1)
 	fname := r.FormValue("fname")
 	lname := r.FormValue("lname")
 	email := r.FormValue("email")
 	coc := r.FormValue("coc")
+	if email == "" {
+		missingEmail.Add(1)
+		http.Error(w, "Missing email", http.StatusPreconditionFailed)
+		return
+	}
 	if fname == "" {
-		http.Error(w, "Missing first name", http.StatusPreconditionFailed)
 		missingFirstName.Add(1)
+		http.Error(w, "Missing first name", http.StatusPreconditionFailed)
 		return
 	}
 	if lname == "" {
-		http.Error(w, "Missing last name", http.StatusPreconditionFailed)
 		missingLastName.Add(1)
-		return
-	}
-	if email == "" {
-		http.Error(w, "Missing email", http.StatusPreconditionFailed)
-		missingEmail.Add(1)
+		http.Error(w, "Missing last name", http.StatusPreconditionFailed)
 		return
 	}
 	if coc != "1" {
-		http.Error(w, "You need to accept the code of conduct", http.StatusPreconditionFailed)
 		missingCoC.Add(1)
+		http.Error(w, "You need to accept the code of conduct", http.StatusPreconditionFailed)
 		return
 	}
 	err = api.InviteToTeam("Gophers", fname, lname, email)
@@ -170,21 +202,4 @@ func onlyLocalhost(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(404), 404)
 		}
 	})
-}
-func main() {
-	// Check if we are missing vital config values
-	if *captchaSitekey == "REPLACEME" || *captchaSecret == "REPLACEME" || *slackToken == "REPLACEME" {
-		log.Fatalln("Missing required input values")
-	}
-	log.SetPrefix("slackinvite:")
-	mux := http.NewServeMux()
-	mux.HandleFunc("/invite/", handleInvite)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", homepage)
-	mux.Handle("/debug/vars", onlyLocalhost(http.DefaultServeMux))
-	log.Println("listening on port", *listenAddr)
-	err := http.ListenAndServe(":"+*listenAddr, handlers.CombinedLoggingHandler(os.Stdout, mux))
-	if err != nil {
-		panic(err)
-	}
 }

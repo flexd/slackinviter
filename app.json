@@ -8,15 +8,15 @@
   "website": "https://github.com/flexd/slackinviter",
   "repository": "https://github.com/flexd/slackinviter",
   "env": {
-    "SLACK_TOKEN": {
+    "SLACKINVITER_SLACKTOKEN": {
       "description": "A Slack API token (find it on https://api.slack.com/web)",
       "required": true
     },
-    "CAPTCHA_SITEKEY": {
+    "SLACKINVITER_CAPTCHASITEKEY": {
       "description": "Recaptcha sitekey",
       "required": true
     },
-    "CAPTCHA_SECRET": {
+    "SLACKINVITER_CAPTCHASECRET": {
       "description": "Recaptcha secret key",
       "required": true
     }
