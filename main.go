@@ -45,7 +45,7 @@ var invalidCaptcha expvar.Int
 var c Specification
 
 type Specification struct {
-	Port           string `required:"true"`
+	Port           string `envconfig:"PORT"`
 	CaptchaSitekey string `required:"true"`
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
