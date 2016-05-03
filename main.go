@@ -78,7 +78,7 @@ func main() {
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("/", homepage)
-	mux.Handle("/debug/vars", onlyLocalhost(http.DefaultServeMux))
+	mux.Handle("/debug/vars", http.DefaultServeMux)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -188,18 +188,4 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error inviting you :-(", http.StatusInternalServerError)
 		return
 	}
-}
-func onlyLocalhost(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-		if host == "127.0.0.1" {
-			next.ServeHTTP(w, r)
-		} else {
-			http.Error(w, http.StatusText(404), 404)
-		}
-	})
 }
