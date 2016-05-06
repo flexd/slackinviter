@@ -40,6 +40,7 @@ var missingCoC expvar.Int
 var successfulCaptcha expvar.Int
 var failedCaptcha expvar.Int
 var invalidCaptcha expvar.Int
+var successfulInvites expvar.Int
 
 // config
 var c Specification
@@ -67,6 +68,7 @@ func init() {
 	m.Set("failed_captcha", &failedCaptcha)
 	m.Set("invalid_captcha", &invalidCaptcha)
 	m.Set("successful_captcha", &successfulCaptcha)
+	m.Set("successful_invites", &successfulInvites)
 	// Init stuff
 	captcha = recaptcha.New(c.CaptchaSecret)
 	api = slack.New(c.SlackToken)
@@ -188,4 +190,5 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error inviting you :-(", http.StatusInternalServerError)
 		return
 	}
+	successfulInvites.Add(1)
 }
