@@ -187,7 +187,7 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("InviteToTeam error:", err)
 		inviteErrors.Add(1)
-		http.Error(w, "Error inviting you :-(", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	successfulInvites.Add(1)
