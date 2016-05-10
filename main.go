@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"sync"
 	"text/template"
@@ -93,8 +92,7 @@ func main() {
 func enforceHTTPSFunc(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if xfp := r.Header.Get("X-Forwarded-Proto"); c.EnforceHTTPS && xfp == "http" {
-			u := new(url.URL)
-			*u = *r.URL
+			u := *r.URL
 			u.Scheme = "https"
 			if u.Host == "" {
 				u.Host = r.Host
