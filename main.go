@@ -97,7 +97,7 @@ func enforceHTTPSFunc(h http.HandlerFunc) http.HandlerFunc {
 			if u.Host == "" {
 				u.Host = r.Host
 			}
-			http.Redirect(w, r, u.String(), 301)
+			http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
 			return
 		}
 		h(w, r)
