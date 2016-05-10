@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"text/template"
@@ -50,6 +51,7 @@ type Specification struct {
 	CaptchaSitekey string `required:"true"`
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
+	EnforceHTTPS   bool
 }
 
 func init() {
@@ -74,18 +76,36 @@ func init() {
 	api = slack.New(c.SlackToken)
 	bufpool = bpool.NewBufferPool(64)
 }
+
 func main() {
 	go pollSlack()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", homepage)
+	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 }
+
+func enforceHTTPSFunc(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if xfp := r.Header.Get("X-Forwarded-Proto"); c.EnforceHTTPS && xfp == "http" {
+			u := new(url.URL)
+			*u = *r.URL
+			u.Scheme = "https"
+			if u.Host == "" {
+				u.Host = r.Host
+			}
+			http.Redirect(w, r, u.String(), 301)
+			return
+		}
+		h(w, r)
+	}
+}
+
 func pollSlack() {
 	for {
 		users, err := api.GetUsers()
@@ -99,7 +119,7 @@ func pollSlack() {
 			if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
 				uCount += 1
 				if u.Presence == "active" {
-					aCount += 1
+					aCount++
 				}
 			}
 		}
