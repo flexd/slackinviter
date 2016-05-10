@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"expvar"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	"sync"
 	"text/template"
 	"time"
 
@@ -14,33 +14,31 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nlopes/slack"
-	"github.com/oxtoacart/bpool"
 	"github.com/paulbellamy/ratecounter"
 )
 
-var captcha *recaptcha.Recaptcha
-var api *slack.Client
-var bufpool *bpool.BufferPool
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
 
-// Slack statistics
-var userCount int
-var activeUserCount int
-var statsMutex sync.RWMutex // Guards slack statistics variables
+var (
+	api     *slack.Client
+	captcha *recaptcha.Recaptcha
+	counter *ratecounter.RateCounter
 
-var m = expvar.NewMap("metrics")
-var counter *ratecounter.RateCounter
-var hitsPerMinute expvar.Int
-var requests expvar.Int
-var inviteErrors expvar.Int
-var missingFirstName expvar.Int
-var missingLastName expvar.Int
-var missingEmail expvar.Int
-var missingCoC expvar.Int
-var successfulCaptcha expvar.Int
-var failedCaptcha expvar.Int
-var invalidCaptcha expvar.Int
-var successfulInvites expvar.Int
+	m *expvar.Map
+	hitsPerMinute,
+	requests,
+	inviteErrors,
+	missingFirstName,
+	missingLastName,
+	missingEmail,
+	missingCoC,
+	successfulCaptcha,
+	failedCaptcha,
+	invalidCaptcha,
+	successfulInvites,
+	userCount,
+	activeUserCount expvar.Int
+)
 
 var c Specification
 
@@ -59,6 +57,7 @@ func init() {
 		log.Fatal(err.Error())
 	}
 	counter = ratecounter.NewRateCounter(1 * time.Minute)
+	m = expvar.NewMap("metrics")
 	m.Set("hits_per_minute", &hitsPerMinute)
 	m.Set("requests", &requests)
 	m.Set("invite_errors", &inviteErrors)
@@ -70,10 +69,11 @@ func init() {
 	m.Set("invalid_captcha", &invalidCaptcha)
 	m.Set("successful_captcha", &successfulCaptcha)
 	m.Set("successful_invites", &successfulInvites)
-	// Init stuff
+	m.Set("active_user_count", &activeUserCount)
+	m.Set("user_count", &userCount)
+
 	captcha = recaptcha.New(c.CaptchaSecret)
 	api = slack.New(c.SlackToken)
-	bufpool = bpool.NewBufferPool(64)
 }
 
 func main() {
@@ -111,8 +111,7 @@ func pollSlack() {
 			log.Println("error polling slack for users:", err)
 			continue
 		}
-		uCount := 0 // users
-		aCount := 0 // active users
+		var uCount, aCount int64 // users and active users
 		for _, u := range users {
 			if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
 				uCount++
@@ -121,10 +120,8 @@ func pollSlack() {
 				}
 			}
 		}
-		statsMutex.Lock()
-		userCount = uCount
-		activeUserCount = aCount
-		statsMutex.Unlock()
+		userCount.Set(uCount)
+		activeUserCount.Set(aCount)
 		time.Sleep(10 * time.Minute)
 	}
 }
@@ -134,12 +131,12 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	counter.Incr(1)
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
-	statsMutex.RLock()
-	data := map[string]interface{}{"SiteKey": c.CaptchaSitekey, "UserCount": userCount, "ActiveCount": activeUserCount}
-	statsMutex.RUnlock()
-	buf := bufpool.Get()
-	defer bufpool.Put(buf)
-	err := indexTemplate.Execute(buf, data)
+
+	data := struct {
+		SiteKey, UserCount, ActiveCount string
+	}{c.CaptchaSitekey, userCount.String(), activeUserCount.String()}
+	var buf bytes.Buffer
+	err := indexTemplate.Execute(&buf, data)
 	if err != nil {
 		log.Println("error rendering template:", err)
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
