@@ -109,6 +109,7 @@ func pollSlack() {
 		users, err := api.GetUsers()
 		if err != nil {
 			log.Println("error polling slack for users:", err)
+			time.Sleep(1 * time.Minute)
 			continue
 		}
 		var uCount, aCount int64 // users and active users
