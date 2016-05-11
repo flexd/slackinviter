@@ -42,9 +42,9 @@ var failedCaptcha expvar.Int
 var invalidCaptcha expvar.Int
 var successfulInvites expvar.Int
 
-// config
 var c Specification
 
+// Specification is the config struct
 type Specification struct {
 	Port           string `envconfig:"PORT"`
 	CaptchaSitekey string `required:"true"`
@@ -115,7 +115,7 @@ func pollSlack() {
 		aCount := 0 // active users
 		for _, u := range users {
 			if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
-				uCount += 1
+				uCount++
 				if u.Presence == "active" {
 					aCount++
 				}
