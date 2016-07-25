@@ -1,0 +1,52 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "oGs34ptsU1kAT727FCTWHy/+o5Y=",
+			"comment": "v1.0.1",
+			"path": "github.com/go-recaptcha/recaptcha",
+			"revision": "a86c95e95c27837a121c69d0feb7ffe1e2d11177"
+		},
+		{
+			"checksumSHA1": "flNRZk3oyHmsux8UsGbj7ziYtUo=",
+			"comment": "v1.1-6-g66e6c6f",
+			"path": "github.com/gorilla/handlers",
+			"revision": "66e6c6f01d8da976ee113437745ca029c2b585a6"
+		},
+		{
+			"checksumSHA1": "o9Tsh0YtWAiNUitlTXZJZXr1U2Q=",
+			"comment": "1.1.0-17-g91921eb",
+			"path": "github.com/kelseyhightower/envconfig",
+			"revision": "91921eb4cf999321cdbeebdba5a03555800d493b"
+		},
+		{
+			"checksumSHA1": "+XhZPRZr5C/pAwHRHqyoZFTXkdE=",
+			"comment": "v0.0.1-104-ge337a73",
+			"path": "github.com/nlopes/slack",
+			"revision": "e337a7316d3fe9aa55b7063035d6d32f3dbcaeb9"
+		},
+		{
+			"checksumSHA1": "fUKybag7b3uWAJ6T8Ww64nkH5ew=",
+			"comment": "v0.1.0",
+			"path": "github.com/paulbellamy/ratecounter",
+			"revision": "5a11f585a31379765c190c033b6ad39956584447"
+		},
+		{
+			"checksumSHA1": "FPmvBmZd5rS9F/Wt5ksZwGxRxBU=",
+			"path": "github.com/pquerna/ffjson/fflib/v1",
+			"revision": "7327d038fae6927740461371efe7f330c23c3e5f"
+		},
+		{
+			"checksumSHA1": "iZHmHPBzKJiS6ROUaVOf4DVOhbA=",
+			"path": "github.com/pquerna/ffjson/fflib/v1/internal",
+			"revision": "7327d038fae6927740461371efe7f330c23c3e5f"
+		},
+		{
+			"checksumSHA1": "fiFafSbOoQaM6Ad+zn7z/xAwLtE=",
+			"path": "golang.org/x/net/websocket",
+			"revision": "815d315ead425c4365077d904a2331ee9e179820"
+		}
+	],
+	"rootPath": "github.com/flexd/slackinviter"
+}
