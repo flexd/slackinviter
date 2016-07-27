@@ -155,13 +155,13 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 		struct {
 			SiteKey,
 			UserCount,
-			ActiveCount,
-			TeamIconURL string
+			ActiveCount string
+			Team *team
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
 			activeUserCount.String(),
-			ourTeam.Icon(),
+			ourTeam,
 		},
 	)
 	if err != nil {

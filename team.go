@@ -11,12 +11,16 @@ import (
 type team struct {
 	mu      sync.RWMutex
 	iconURL string
+	name    string
+	domain  string
 }
 
 // TODO(freeformz): default image?
 func (t *team) Update(s *slack.TeamInfo) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	t.name = s.Name
+	t.domain = s.Domain
 	if v, ok := s.Icon["image_default"]; ok {
 		if b, ok := v.(bool); ok && b {
 			t.iconURL = ""
@@ -41,4 +45,18 @@ func (t *team) Icon() string {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.iconURL
+}
+
+// Name of the team
+func (t *team) Name() string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.name
+}
+
+// Domain of the team
+func (t *team) Domain() string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.domain
 }
