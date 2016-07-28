@@ -24,6 +24,8 @@ var (
 	captcha *recaptcha.Recaptcha
 	counter *ratecounter.RateCounter
 
+	ourTeam = new(team)
+
 	m *expvar.Map
 	hitsPerMinute,
 	requests,
@@ -44,7 +46,7 @@ var c Specification
 
 // Specification is the config struct
 type Specification struct {
-	Port           string `envconfig:"PORT"`
+	Port           string `envconfig:"PORT" required:"true"`
 	CaptchaSitekey string `required:"true"`
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
@@ -104,26 +106,40 @@ func enforceHTTPSFunc(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func pollSlack() {
-	for {
-		users, err := api.GetUsers()
-		if err != nil {
-			log.Println("error polling slack for users:", err)
-			time.Sleep(1 * time.Minute)
-			continue
-		}
-		var uCount, aCount int64 // users and active users
-		for _, u := range users {
-			if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
-				uCount++
-				if u.Presence == "active" {
-					aCount++
-				}
+// Updates the globals from the slack API
+// returns the length of time to sleep before the function
+// should be called again
+func updateFromSlack() time.Duration {
+	users, err := api.GetUsers()
+	if err != nil {
+		log.Println("error polling slack for users:", err)
+		return time.Minute
+	}
+	var uCount, aCount int64 // users and active users
+	for _, u := range users {
+		if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
+			uCount++
+			if u.Presence == "active" {
+				aCount++
 			}
 		}
-		userCount.Set(uCount)
-		activeUserCount.Set(aCount)
-		time.Sleep(10 * time.Minute)
+	}
+	userCount.Set(uCount)
+	activeUserCount.Set(aCount)
+
+	st, err := api.GetTeamInfo()
+	if err != nil {
+		log.Println("error polling slack for team info:", err)
+		return time.Minute
+	}
+	ourTeam.Update(st)
+	return 10 * time.Minute
+}
+
+// pollSlack over and over again
+func pollSlack() {
+	for {
+		time.Sleep(updateFromSlack())
 	}
 }
 
@@ -133,11 +149,21 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
 
-	data := struct {
-		SiteKey, UserCount, ActiveCount string
-	}{c.CaptchaSitekey, userCount.String(), activeUserCount.String()}
 	var buf bytes.Buffer
-	err := indexTemplate.Execute(&buf, data)
+	err := indexTemplate.Execute(
+		&buf,
+		struct {
+			SiteKey,
+			UserCount,
+			ActiveCount string
+			Team *team
+		}{
+			c.CaptchaSitekey,
+			userCount.String(),
+			activeUserCount.String(),
+			ourTeam,
+		},
+	)
 	if err != nil {
 		log.Println("error rendering template:", err)
 		http.Error(w, "error rendering template :-(", http.StatusInternalServerError)
