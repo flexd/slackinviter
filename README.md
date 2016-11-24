@@ -10,3 +10,5 @@ Install or update with `go get -u github.com/flexd/slackinviter`. Run `slackinvi
 * A username and email field.
 * Recaptha, meaning that you can verify your people signing up. This means no bot spam.
 * Picture of Slack chat logo.
+* Free hosting using Heroku.
+* Easy to set up, and quick and easy to use!
