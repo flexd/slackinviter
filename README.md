@@ -6,6 +6,7 @@ This is a [slackin](https://github.com/rauchg/slackin) clone written in Go becau
 
 Install or update with `go get -u github.com/flexd/slackinviter`. Run `slackinviter` with `-h` for help, it just takes recaptcha secret + sitekey + slack api token as parameter, and listenAddr.
 
+See https://cognitive.io/post/rewriting-the-gophers-invite-form-in-go/ to understand why I decided to rewrite Slackin in Go.
 ## Features
 * A username and email field.
 * Recaptha, meaning that you can verify your people signing up. This means no bot spam.
