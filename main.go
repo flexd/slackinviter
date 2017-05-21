@@ -51,6 +51,7 @@ type Specification struct {
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
 	EnforceHTTPS   bool
+	Debug          bool
 }
 
 func init() {
@@ -76,6 +77,10 @@ func init() {
 
 	captcha = recaptcha.New(c.CaptchaSecret)
 	api = slack.New(c.SlackToken)
+
+	if c.Debug {
+		api.SetDebug(true)
+	}
 }
 
 func main() {
