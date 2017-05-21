@@ -19,6 +19,11 @@
     "SLACKINVITER_CAPTCHASECRET": {
       "description": "Recaptcha secret key",
       "required": true
+    },
+    "SLACKINVITER_COCURL": {
+      "description": "Url to a code of conduct",
+      "value": "http://coc.golangbridge.org/",
+      "required": false
     }
   }
 }

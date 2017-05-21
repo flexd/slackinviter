@@ -22,8 +22,7 @@
             placeholder="Last name" type="text">
             <div class="coc">
                 <label><input name="coc" type="checkbox" value="1">I agree to
-                the <a href="http://coc.golangbridge.org/" target="_blank">Code
-                of Conduct</a>.</label>
+                the <a href="{{.CocUrl}}">Code of Conduct</a>.</label>
             </div><br>
             <div class="g-recaptcha" data-sitekey="{{.SiteKey}}"></div>
             <button class="loading">Get my Invite</button>

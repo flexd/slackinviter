@@ -13,6 +13,7 @@ type team struct {
 	iconURL string
 	name    string
 	domain  string
+	cocURL  string
 }
 
 // TODO(freeformz): default image?
