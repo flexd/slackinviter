@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"expvar"
+	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -52,10 +53,21 @@ type Specification struct {
 	SlackToken     string `required:"true"`
 	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
 	EnforceHTTPS   bool
-	Debug          bool
+	Debug          bool // toggles nlopes/slack client's debug flag
 }
 
 func init() {
+	var showUsage = flag.Bool("h", false, "Show usage")
+	flag.Parse()
+
+	if *showUsage {
+		err := envconfig.Usage("slackinviter", &c)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		os.Exit(0)
+	}
+
 	err := envconfig.Process("slackinviter", &c)
 	if err != nil {
 		log.Fatal(err.Error())
