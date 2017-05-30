@@ -230,7 +230,7 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "You need to accept the code of conduct", http.StatusPreconditionFailed)
 		return
 	}
-	err = api.InviteToTeam("Gophers", fname, lname, email)
+	err = api.InviteToTeam(ourTeam.Domain(), fname, lname, email)
 	if err != nil {
 		log.Println("InviteToTeam error:", err)
 		inviteErrors.Add(1)
