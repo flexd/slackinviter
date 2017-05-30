@@ -19,3 +19,6 @@ Visit https://invite.slack.golangbridge.org to see the real thing, or look at th
 * Picture of Slack chat logo.
 * Free hosting using Heroku.
 * Easy to set up, and quick and easy to use!
+
+## Troubleshooting
+* `SLACKINVITER_DEBUG=1` to turn on debug logs for the slack api
