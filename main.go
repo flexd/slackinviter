@@ -50,6 +50,7 @@ type Specification struct {
 	CaptchaSitekey string `required:"true"`
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
+	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
 	EnforceHTTPS   bool
 	Debug          bool
 }
@@ -161,12 +162,14 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			SiteKey,
 			UserCount,
 			ActiveCount string
-			Team *team
+			Team   *team
+			CocUrl string
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
 			activeUserCount.String(),
 			ourTeam,
+			c.CocUrl,
 		},
 	)
 	if err != nil {
