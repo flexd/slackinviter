@@ -1,7 +1,7 @@
 {
   "name": "Slackinviter",
   "description": "Let people invite themselves to your Slack",
-  "logo": "https://i.imgur.com/odDO1Fx.png",
+  "logo": "https://i.imgur.com/8mRVeMn.png",
   "keywords": ["go", "slack"],
   "image": "heroku/go:1.6",
   "mount_dir": "http://github.com/flexd/slackinviter",
@@ -19,6 +19,11 @@
     "SLACKINVITER_CAPTCHASECRET": {
       "description": "Recaptcha secret key",
       "required": true
+    },
+    "SLACKINVITER_COCURL": {
+      "description": "Url to a code of conduct",
+      "value": "http://coc.golangbridge.org/",
+      "required": false
     }
   }
 }
