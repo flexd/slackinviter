@@ -3,11 +3,15 @@
   "description": "Let people invite themselves to your Slack",
   "logo": "https://i.imgur.com/8mRVeMn.png",
   "keywords": ["go", "slack"],
-  "image": "heroku/go:1.6",
+  "image": "heroku/go:1.8",
   "mount_dir": "http://github.com/flexd/slackinviter",
   "website": "https://github.com/flexd/slackinviter",
   "repository": "https://github.com/flexd/slackinviter",
   "env": {
+    "SLACKINVITER_PORT": {
+      "description": "The port the webservice should run on",
+      "required": true
+    },
     "SLACKINVITER_SLACKTOKEN": {
       "description": "A Slack API token (find it on https://api.slack.com/web)",
       "required": true
@@ -23,6 +27,10 @@
     "SLACKINVITER_COCURL": {
       "description": "Url to a code of conduct",
       "value": "http://coc.golangbridge.org/",
+      "required": false
+    },
+    "SLACKINVITER_DEBUG": {
+      "description": "Enable logging debug messages",
       "required": false
     }
   }
