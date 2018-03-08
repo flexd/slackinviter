@@ -15,10 +15,11 @@
 			"revision": "66e6c6f01d8da976ee113437745ca029c2b585a6"
 		},
 		{
-			"checksumSHA1": "o9Tsh0YtWAiNUitlTXZJZXr1U2Q=",
+			"checksumSHA1": "gWlw0l2wMBLhmejJCTr/Zywqyk8=",
 			"comment": "1.1.0-17-g91921eb",
 			"path": "github.com/kelseyhightower/envconfig",
-			"revision": "91921eb4cf999321cdbeebdba5a03555800d493b"
+			"revision": "70f0258d44cbaa3b6a2581d82f58da01a38e4de4",
+			"revisionTime": "2017-05-23T19:07:22Z"
 		},
 		{
 			"checksumSHA1": "+XhZPRZr5C/pAwHRHqyoZFTXkdE=",
