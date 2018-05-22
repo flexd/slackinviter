@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"context"
 	"errors"
 	"net/url"
 )
@@ -8,6 +9,7 @@ import (
 type OAuthResponseIncomingWebhook struct {
 	URL              string `json:"url"`
 	Channel          string `json:"channel"`
+	ChannelID        string `json:"channel_id,omitempty"`
 	ConfigurationURL string `json:"configuration_url"`
 }
 
@@ -23,12 +25,18 @@ type OAuthResponse struct {
 	TeamID          string                       `json:"team_id"`
 	IncomingWebhook OAuthResponseIncomingWebhook `json:"incoming_webhook"`
 	Bot             OAuthResponseBot             `json:"bot"`
+	UserID          string                       `json:"user_id,omitempty"`
 	SlackResponse
 }
 
 // GetOAuthToken retrieves an AccessToken
 func GetOAuthToken(clientID, clientSecret, code, redirectURI string, debug bool) (accessToken string, scope string, err error) {
-	response, err := GetOAuthResponse(clientID, clientSecret, code, redirectURI, debug)
+	return GetOAuthTokenContext(context.Background(), clientID, clientSecret, code, redirectURI, debug)
+}
+
+// GetOAuthTokenContext retrieves an AccessToken with a custom context
+func GetOAuthTokenContext(ctx context.Context, clientID, clientSecret, code, redirectURI string, debug bool) (accessToken string, scope string, err error) {
+	response, err := GetOAuthResponseContext(ctx, clientID, clientSecret, code, redirectURI, debug)
 	if err != nil {
 		return "", "", err
 	}
@@ -36,6 +44,10 @@ func GetOAuthToken(clientID, clientSecret, code, redirectURI string, debug bool)
 }
 
 func GetOAuthResponse(clientID, clientSecret, code, redirectURI string, debug bool) (resp *OAuthResponse, err error) {
+	return GetOAuthResponseContext(context.Background(), clientID, clientSecret, code, redirectURI, debug)
+}
+
+func GetOAuthResponseContext(ctx context.Context, clientID, clientSecret, code, redirectURI string, debug bool) (resp *OAuthResponse, err error) {
 	values := url.Values{
 		"client_id":     {clientID},
 		"client_secret": {clientSecret},
@@ -43,7 +55,7 @@ func GetOAuthResponse(clientID, clientSecret, code, redirectURI string, debug bo
 		"redirect_uri":  {redirectURI},
 	}
 	response := &OAuthResponse{}
-	err = post("oauth.access", values, response, debug)
+	err = post(ctx, customHTTPClient, "oauth.access", values, response, debug)
 	if err != nil {
 		return nil, err
 	}

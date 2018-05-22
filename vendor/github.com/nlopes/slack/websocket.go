@@ -3,10 +3,10 @@ package slack
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"sync"
 	"time"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 // RTM represents a managed websocket connection. It also supports
 // all the methods of the `Client` type.
 //
-// Create this element with Client's NewRTM().
+// Create this element with Client's NewRTM() or NewRTMWithOptions(*RTMOptions)
 type RTM struct {
 	idGen IDGenerator
 	pings map[int]time.Time
@@ -28,6 +28,7 @@ type RTM struct {
 	IncomingEvents   chan RTMEvent
 	outgoingMessages chan OutgoingMessage
 	killChannel      chan bool
+	disconnected     chan struct{} // disconnected is closed when Disconnect is invoked, regardless of connection state. Allows for ManagedConnection to not leak.
 	forcePing        chan bool
 	rawEvents        chan json.RawMessage
 	wasIntentional   bool
@@ -39,37 +40,52 @@ type RTM struct {
 
 	// UserDetails upon connection
 	info *Info
+
+	// useRTMStart should be set to true if you want to use
+	// rtm.start to connect to Slack, otherwise it will use
+	// rtm.connect
+	useRTMStart bool
+
+	// dialer is a gorilla/websocket Dialer. If nil, use the default
+	// Dialer.
+	dialer *websocket.Dialer
+
+	// mu is mutex used to prevent RTM connection race conditions
+	mu *sync.Mutex
 }
 
-// NewRTM returns a RTM, which provides a fully managed connection to
-// Slack's websocket-based Real-Time Messaging protocol.
-func newRTM(api *Client) *RTM {
-	return &RTM{
-		Client:           *api,
-		IncomingEvents:   make(chan RTMEvent, 50),
-		outgoingMessages: make(chan OutgoingMessage, 20),
-		pings:            make(map[int]time.Time),
-		isConnected:      false,
-		wasIntentional:   true,
-		killChannel:      make(chan bool),
-		forcePing:        make(chan bool),
-		rawEvents:        make(chan json.RawMessage),
-		idGen:            NewSafeID(1),
-	}
+// RTMOptions allows configuration of various options available for RTM messaging
+//
+// This structure will evolve in time so please make sure you are always using the
+// named keys for every entry available as per Go 1 compatibility promise adding fields
+// to this structure should not be considered a breaking change.
+type RTMOptions struct {
+	// UseRTMStart set to true in order to use rtm.start or false to use rtm.connect
+	// As of 11th July 2017 you should prefer setting this to false, see:
+	// https://api.slack.com/changelog/2017-04-start-using-rtm-connect-and-stop-using-rtm-start
+	UseRTMStart bool
 }
 
 // Disconnect and wait, blocking until a successful disconnection.
 func (rtm *RTM) Disconnect() error {
+	// avoid RTM disconnect race conditions
+	rtm.mu.Lock()
+	defer rtm.mu.Unlock()
+	// this channel is always closed on disconnect. lets the ManagedConnection() function
+	// properly clean up.
+	close(rtm.disconnected)
+
 	if !rtm.isConnected {
 		return errors.New("Invalid call to Disconnect - Slack API is already disconnected")
 	}
+
 	rtm.killChannel <- true
 	return nil
 }
 
 // Reconnect only makes sense if you've successfully disconnectd with Disconnect().
 func (rtm *RTM) Reconnect() error {
-	log.Println("RTM::Reconnect not implemented!")
+	logger.Println("RTM::Reconnect not implemented!")
 	return nil
 }
 

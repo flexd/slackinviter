@@ -2,10 +2,12 @@ package slack
 
 // OutgoingMessage is used for the realtime API, and seems incomplete.
 type OutgoingMessage struct {
-	ID      int    `json:"id"`
-	Channel string `json:"channel,omitempty"`
-	Text    string `json:"text,omitempty"`
-	Type    string `json:"type,omitempty"`
+	ID int `json:"id"`
+	// channel ID
+	Channel         string `json:"channel,omitempty"`
+	Text            string `json:"text,omitempty"`
+	Type            string `json:"type,omitempty"`
+	ThreadTimestamp string `json:"thread_ts,omitempty"`
 }
 
 // Message is an auxiliary type to allow us to have a message containing sub messages
@@ -17,15 +19,19 @@ type Message struct {
 // Msg contains information about a slack message
 type Msg struct {
 	// Basic Message
-	Type        string       `json:"type,omitempty"`
-	Channel     string       `json:"channel,omitempty"`
-	User        string       `json:"user,omitempty"`
-	Text        string       `json:"text,omitempty"`
-	Timestamp   string       `json:"ts,omitempty"`
-	IsStarred   bool         `json:"is_starred,omitempty"`
-	PinnedTo    []string     `json:"pinned_to, omitempty"`
-	Attachments []Attachment `json:"attachments,omitempty"`
-	Edited      *Edited      `json:"edited,omitempty"`
+	Type            string       `json:"type,omitempty"`
+	Channel         string       `json:"channel,omitempty"`
+	User            string       `json:"user,omitempty"`
+	Text            string       `json:"text,omitempty"`
+	Timestamp       string       `json:"ts,omitempty"`
+	ThreadTimestamp string       `json:"thread_ts,omitempty"`
+	IsStarred       bool         `json:"is_starred,omitempty"`
+	PinnedTo        []string     `json:"pinned_to,omitempty"`
+	Attachments     []Attachment `json:"attachments,omitempty"`
+	Edited          *Edited      `json:"edited,omitempty"`
+	LastRead        string       `json:"last_read,omitempty"`
+	Subscribed      bool         `json:"subscribed,omitempty"`
+	UnreadCount     int          `json:"unread_count,omitempty"`
 
 	// Message Subtypes
 	SubType string `json:"subtype,omitempty"`
@@ -56,6 +62,11 @@ type Msg struct {
 	// channel_archive, group_archive
 	Members []string `json:"members,omitempty"`
 
+	// channels.replies, groups.replies, im.replies, mpim.replies
+	ReplyCount   int     `json:"reply_count,omitempty"`
+	Replies      []Reply `json:"replies,omitempty"`
+	ParentUserId string  `json:"parent_user_id,omitempty"`
+
 	// file_share, file_comment, file_mention
 	File *File `json:"file,omitempty"`
 
@@ -74,6 +85,11 @@ type Msg struct {
 
 	// reactions
 	Reactions []ItemReaction `json:"reactions,omitempty"`
+
+	// slash commands and interactive messages
+	ResponseType    string `json:"response_type,omitempty"`
+	ReplaceOriginal bool   `json:"replace_original,omitempty"`
+	DeleteOriginal  bool   `json:"delete_original,omitempty"`
 }
 
 // Icon is used for bot messages
@@ -84,6 +100,12 @@ type Icon struct {
 
 // Edited indicates that a message has been edited.
 type Edited struct {
+	User      string `json:"user,omitempty"`
+	Timestamp string `json:"ts,omitempty"`
+}
+
+// Reply contains information about a reply for a thread
+type Reply struct {
 	User      string `json:"user,omitempty"`
 	Timestamp string `json:"ts,omitempty"`
 }
@@ -108,12 +130,12 @@ type Pong struct {
 // NewOutgoingMessage prepares an OutgoingMessage that the user can
 // use to send a message. Use this function to properly set the
 // messageID.
-func (rtm *RTM) NewOutgoingMessage(text string, channel string) *OutgoingMessage {
+func (rtm *RTM) NewOutgoingMessage(text string, channelID string) *OutgoingMessage {
 	id := rtm.idGen.Next()
 	return &OutgoingMessage{
 		ID:      id,
 		Type:    "message",
-		Channel: channel,
+		Channel: channelID,
 		Text:    text,
 	}
 }
@@ -121,11 +143,11 @@ func (rtm *RTM) NewOutgoingMessage(text string, channel string) *OutgoingMessage
 // NewTypingMessage prepares an OutgoingMessage that the user can
 // use to send as a typing indicator. Use this function to properly set the
 // messageID.
-func (rtm *RTM) NewTypingMessage(channel string) *OutgoingMessage {
+func (rtm *RTM) NewTypingMessage(channelID string) *OutgoingMessage {
 	id := rtm.idGen.Next()
 	return &OutgoingMessage{
 		ID:      id,
 		Type:    "typing",
-		Channel: channel,
+		Channel: channelID,
 	}
 }
