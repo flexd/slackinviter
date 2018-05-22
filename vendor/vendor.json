@@ -1,4 +1,7 @@
 {
+	"heroku": {
+		"sync":false
+	},
 	"comment": "",
 	"ignore": "test",
 	"package": [
