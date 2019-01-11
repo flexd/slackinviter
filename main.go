@@ -14,6 +14,7 @@ import (
 	"github.com/go-recaptcha/recaptcha"
 	"github.com/gorilla/handlers"
 	"github.com/kelseyhightower/envconfig"
+	badge "github.com/narqo/go-badge"
 	"github.com/nlopes/slack"
 	"github.com/paulbellamy/ratecounter"
 )
@@ -96,12 +97,33 @@ func init() {
 	}
 }
 
+func handleBadge(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	users := userCount.String()
+	if activeUserCount.Value() > 0 {
+		users = activeUserCount.String() + "/" + userCount.String()
+	}
+
+	var buf bytes.Buffer
+	if err := badge.Render("slack", users, "#E01563", &buf); err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
+	buf.WriteTo(w)
+
+}
+
 func main() {
 	go pollSlack()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
+	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
