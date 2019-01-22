@@ -9,6 +9,18 @@
 			"revision": "a86c95e95c27837a121c69d0feb7ffe1e2d11177"
 		},
 		{
+			"checksumSHA1": "aJ/kX/eCUlrCJBZ26Hwh/RXzAIw=",
+			"path": "github.com/golang/freetype/raster",
+			"revision": "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4",
+			"revisionTime": "2017-06-09T00:35:04Z"
+		},
+		{
+			"checksumSHA1": "I3u9Uh9thka1gsgch6QEiPkaAr0=",
+			"path": "github.com/golang/freetype/truetype",
+			"revision": "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4",
+			"revisionTime": "2017-06-09T00:35:04Z"
+		},
+		{
 			"checksumSHA1": "flNRZk3oyHmsux8UsGbj7ziYtUo=",
 			"comment": "v1.1-6-g66e6c6f",
 			"path": "github.com/gorilla/handlers",
@@ -20,6 +32,18 @@
 			"path": "github.com/kelseyhightower/envconfig",
 			"revision": "70f0258d44cbaa3b6a2581d82f58da01a38e4de4",
 			"revisionTime": "2017-05-23T19:07:22Z"
+		},
+		{
+			"checksumSHA1": "sjtRri8bbmuz0T1fyzmJ3CxIidM=",
+			"path": "github.com/narqo/go-badge",
+			"revision": "3014a17b062a7131301593113f579a8da169b99d",
+			"revisionTime": "2016-03-08T22:40:23Z"
+		},
+		{
+			"checksumSHA1": "RnrGqwG2pDfYRE2SuPjD+EMtHKY=",
+			"path": "github.com/narqo/go-badge/fonts",
+			"revision": "3014a17b062a7131301593113f579a8da169b99d",
+			"revisionTime": "2016-03-08T22:40:23Z"
 		},
 		{
 			"checksumSHA1": "+XhZPRZr5C/pAwHRHqyoZFTXkdE=",
@@ -42,6 +66,18 @@
 			"checksumSHA1": "iZHmHPBzKJiS6ROUaVOf4DVOhbA=",
 			"path": "github.com/pquerna/ffjson/fflib/v1/internal",
 			"revision": "7327d038fae6927740461371efe7f330c23c3e5f"
+		},
+		{
+			"checksumSHA1": "CQYQ8wELyxPMRYOTDLELVtude/M=",
+			"path": "golang.org/x/image/font",
+			"revision": "cd38e8056d9b27bb2f265effa37fb0ea6b8a7f0f",
+			"revisionTime": "2018-11-15T22:27:58Z"
+		},
+		{
+			"checksumSHA1": "euzvwlMLxyD0hwc+raoVsDLv6j4=",
+			"path": "golang.org/x/image/math/fixed",
+			"revision": "cd38e8056d9b27bb2f265effa37fb0ea6b8a7f0f",
+			"revisionTime": "2018-11-15T22:27:58Z"
 		},
 		{
 			"checksumSHA1": "fiFafSbOoQaM6Ad+zn7z/xAwLtE=",
