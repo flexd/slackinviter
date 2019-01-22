@@ -14,12 +14,14 @@ var button = body.querySelector('button');
 button.className = '';
 
 // capture submit
+recaptcha_elem = document.getElementById("g-recaptcha-response");
+recaptcha_res = recaptcha_elem === null ? null : recaptcha_elem.value;
 body.addEventListener('submit', function(ev){
   ev.preventDefault();
   button.disabled = true;
   button.className = '';
   button.innerHTML = 'Please Wait';
-  invite(coc && coc.checked ? 1 : 0, email.value, first_name.value, last_name.value, document.getElementById("g-recaptcha-response").value, function(err){
+  invite(coc && coc.checked ? 1 : 0, email.value, first_name.value, last_name.value, recaptcha_res, function(err){
     if (err) {
       button.removeAttribute('disabled');
       button.className = 'error';
