@@ -3,9 +3,7 @@
     <title>Join {{.Team.Name}} on Slack!</title>
     <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,user-scalable=no">
     <link rel="shortcut icon" href="https://slack.global.ssl.fastly.net/272a/img/icons/favicon-32.png">
-    {{ if .SiteKey }}
     <script src="https://www.google.com/recaptcha/api.js"></script>
-    {{ end }}
 </head>
 <body>
     <div class="splash">
@@ -26,9 +24,7 @@
                 <label><input name="coc" type="checkbox" value="1">I agree to
                 the <a href="{{.CocUrl}}">Code of Conduct</a>.</label>
             </div><br>
-            {{ if .SiteKey }}
             <div class="g-recaptcha" data-sitekey="{{.SiteKey}}"></div>
-            {{ end }}
             <button class="loading">Get my Invite</button>
         </form>
         <p class="signin">or <a href="https://{{.Team.Domain}}.slack.com" target=
