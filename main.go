@@ -92,11 +92,7 @@ func init() {
 	m.Set("user_count", &userCount)
 
 	captcha = recaptcha.New(c.CaptchaSecret)
-	api = slack.New(c.SlackToken)
-
-	if c.Debug {
-		api.SetDebug(true)
-	}
+	api = slack.New(c.SlackToken, slack.OptionDebug(c.Debug))
 }
 
 func handleBadge(w http.ResponseWriter, r *http.Request) {
