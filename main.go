@@ -112,7 +112,6 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
 	buf.WriteTo(w)
-
 }
 
 func main() {
@@ -239,7 +238,6 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-	captchaResponse := r.FormValue("g-recaptcha-response")
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		failedCaptcha.Add(1)
@@ -247,6 +245,7 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	captchaResponse := r.FormValue("g-recaptcha-response")
 	valid, err := captcha.Verify(captchaResponse, remoteIP)
 	if err != nil {
 		failedCaptcha.Add(1)
