@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"expvar"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -90,11 +92,7 @@ func init() {
 	m.Set("user_count", &userCount)
 
 	captcha = recaptcha.New(c.CaptchaSecret)
-	api = slack.New(c.SlackToken)
-
-	if c.Debug {
-		api.SetDebug(true)
-	}
+	api = slack.New(c.SlackToken, slack.OptionDebug(c.Debug))
 }
 
 func handleBadge(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +112,6 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
 	buf.WriteTo(w)
-
 }
 
 func main() {
@@ -150,22 +147,41 @@ func enforceHTTPSFunc(h http.HandlerFunc) http.HandlerFunc {
 // returns the length of time to sleep before the function
 // should be called again
 func updateFromSlack() time.Duration {
-	users, err := api.GetUsers()
-	if err != nil {
-		log.Println("error polling slack for users:", err)
-		return time.Minute
-	}
-	var uCount, aCount int64 // users and active users
-	for _, u := range users {
-		if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
-			uCount++
-			if u.Presence == "active" {
-				aCount++
+	var (
+		err            error
+		p              slack.UserPagination
+		uCount, aCount int64 // users and active users
+	)
+
+	ctx := context.Background()
+	for p = api.GetUsersPaginated(
+		slack.GetUsersOptionPresence(true),
+		slack.GetUsersOptionLimit(500),
+	); !p.Done(err); p, err = p.Next(ctx) {
+		if err != nil {
+			if rle, ok := err.(*slack.RateLimitedError); ok {
+				fmt.Printf("Being Rate Limited by Slack: %s\n", rle)
+				time.Sleep(rle.RetryAfter)
+				continue
 			}
 		}
+		for _, u := range p.Users {
+			if u.ID != "USLACKBOT" && !u.IsBot && !u.Deleted {
+				uCount++
+				if u.Presence == "active" {
+					aCount++
+				}
+			}
+		}
+		fmt.Println("User Count:", uCount)
+		fmt.Println("Active Count:", aCount)
 	}
 	userCount.Set(uCount)
 	activeUserCount.Set(aCount)
+	if err != nil && !p.Done(err) {
+		log.Println("error polling slack for users:", err)
+		return time.Minute
+	}
 
 	st, err := api.GetTeamInfo()
 	if err != nil {
@@ -173,7 +189,7 @@ func updateFromSlack() time.Duration {
 		return time.Minute
 	}
 	ourTeam.Update(st)
-	return 10 * time.Minute
+	return time.Hour
 }
 
 // pollSlack over and over again
@@ -222,7 +238,6 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-	captchaResponse := r.FormValue("g-recaptcha-response")
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		failedCaptcha.Add(1)
@@ -230,6 +245,7 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	captchaResponse := r.FormValue("g-recaptcha-response")
 	valid, err := captcha.Verify(captchaResponse, remoteIP)
 	if err != nil {
 		failedCaptcha.Add(1)

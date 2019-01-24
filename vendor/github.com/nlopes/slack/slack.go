@@ -1,22 +1,39 @@
 package slack
 
 import (
-	"errors"
+	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"net/url"
+	"os"
 )
 
-/*
-  Added as a var so that we can change this for testing purposes
-*/
-var SLACK_API string = "https://slack.com/api/"
-var SLACK_WEB_API_FORMAT string = "https://%s.slack.com/api/users.admin.%s?t=%s"
+// APIURL added as a var so that we can change this for testing purposes
+var APIURL = "https://slack.com/api/"
 
-type SlackResponse struct {
-	Ok    bool   `json:"ok"`
-	Error string `json:"error"`
+// WEBAPIURLFormat ...
+const WEBAPIURLFormat = "https://%s.slack.com/api/users.admin.%s?t=%d"
+
+// httpClient defines the minimal interface needed for an http.Client to be implemented.
+type httpClient interface {
+	Do(*http.Request) (*http.Response, error)
 }
 
+// ResponseMetadata holds pagination metadata
+type ResponseMetadata struct {
+	Cursor string `json:"next_cursor"`
+}
+
+func (t *ResponseMetadata) initialize() *ResponseMetadata {
+	if t != nil {
+		return t
+	}
+
+	return &ResponseMetadata{}
+}
+
+// AuthTestResponse ...
 type AuthTestResponse struct {
 	URL    string `json:"url"`
 	Team   string `json:"team"`
@@ -30,48 +47,85 @@ type authTestResponseFull struct {
 	AuthTestResponse
 }
 
+// Client for the slack api.
 type Client struct {
-	config struct {
-		token string
-	}
-	info  Info
-	debug bool
+	token      string
+	debug      bool
+	log        ilogger
+	httpclient httpClient
 }
 
-func New(token string) *Client {
-	s := &Client{}
-	s.config.token = token
+// Option defines an option for a Client
+type Option func(*Client)
+
+// OptionHTTPClient - provide a custom http client to the slack client.
+func OptionHTTPClient(client httpClient) func(*Client) {
+	return func(c *Client) {
+		c.httpclient = client
+	}
+}
+
+// OptionDebug enable debugging for the client
+func OptionDebug(b bool) func(*Client) {
+	return func(c *Client) {
+		c.debug = b
+	}
+}
+
+// OptionLog set logging for client.
+func OptionLog(l logger) func(*Client) {
+	return func(c *Client) {
+		c.log = internalLog{logger: l}
+	}
+}
+
+// New builds a slack client from the provided token and options.
+func New(token string, options ...Option) *Client {
+	s := &Client{
+		token:      token,
+		httpclient: &http.Client{},
+		log:        log.New(os.Stderr, "nlopes/slack", log.LstdFlags|log.Lshortfile),
+	}
+
+	for _, opt := range options {
+		opt(s)
+	}
+
 	return s
 }
 
 // AuthTest tests if the user is able to do authenticated requests or not
 func (api *Client) AuthTest() (response *AuthTestResponse, error error) {
+	return api.AuthTestContext(context.Background())
+}
+
+// AuthTestContext tests if the user is able to do authenticated requests or not with a custom context
+func (api *Client) AuthTestContext(ctx context.Context) (response *AuthTestResponse, err error) {
+	api.Debugf("Challenging auth...")
 	responseFull := &authTestResponseFull{}
-	err := post("auth.test", url.Values{"token": {api.config.token}}, responseFull, api.debug)
+	err = postSlackMethod(ctx, api.httpclient, "auth.test", url.Values{"token": {api.token}}, responseFull, api)
 	if err != nil {
 		return nil, err
 	}
-	if !responseFull.Ok {
-		return nil, errors.New(responseFull.Error)
-	}
-	return &responseFull.AuthTestResponse, nil
+
+	return &responseFull.AuthTestResponse, responseFull.Err()
 }
 
-// SetDebug switches the api into debug mode
-// When in debug mode, it logs various info about what its doing
-// If you ever use this in production, don't call SetDebug(true)
-func (api *Client) SetDebug(debug bool) {
-	api.debug = debug
-}
-
+// Debugf print a formatted debug line.
 func (api *Client) Debugf(format string, v ...interface{}) {
 	if api.debug {
-		log.Printf(format, v...)
+		api.log.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
+// Debugln print a debug line.
 func (api *Client) Debugln(v ...interface{}) {
 	if api.debug {
-		log.Println(v...)
+		api.log.Output(2, fmt.Sprintln(v...))
 	}
+}
+
+// Debug returns if debug is enabled.
+func (api *Client) Debug() bool {
+	return api.debug
 }

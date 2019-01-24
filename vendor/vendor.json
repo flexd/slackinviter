@@ -1,5 +1,8 @@
 {
 	"comment": "",
+	"heroku": {
+		"sync": false
+	},
 	"ignore": "test",
 	"package": [
 		{
@@ -27,6 +30,12 @@
 			"revision": "66e6c6f01d8da976ee113437745ca029c2b585a6"
 		},
 		{
+			"checksumSHA1": "mB5P3/XIC7r4Jc0/K86NA9Jq2CA=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "21ab95fa12b9bdd8fecf5fa3586aad941cc98785",
+			"revisionTime": "2018-04-20T17:16:12Z"
+		},
+		{
 			"checksumSHA1": "gWlw0l2wMBLhmejJCTr/Zywqyk8=",
 			"comment": "1.1.0-17-g91921eb",
 			"path": "github.com/kelseyhightower/envconfig",
@@ -46,16 +55,29 @@
 			"revisionTime": "2016-03-08T22:40:23Z"
 		},
 		{
-			"checksumSHA1": "+XhZPRZr5C/pAwHRHqyoZFTXkdE=",
+			"checksumSHA1": "v+PlIBJEsZeJ8HNXA5EHTfW/jvE=",
 			"comment": "v0.0.1-104-ge337a73",
 			"path": "github.com/nlopes/slack",
-			"revision": "e337a7316d3fe9aa55b7063035d6d32f3dbcaeb9"
+			"revision": "a7deeca7935c178aa865249bab511daf816288ba",
+			"revisionTime": "2019-01-20T10:42:55Z"
+		},
+		{
+			"checksumSHA1": "qyYGIzIDhpvtt4ut9Ifnimtuc30=",
+			"path": "github.com/nlopes/slack/slackutilsx",
+			"revision": "a7deeca7935c178aa865249bab511daf816288ba",
+			"revisionTime": "2019-01-20T10:42:55Z"
 		},
 		{
 			"checksumSHA1": "fUKybag7b3uWAJ6T8Ww64nkH5ew=",
 			"comment": "v0.1.0",
 			"path": "github.com/paulbellamy/ratecounter",
 			"revision": "5a11f585a31379765c190c033b6ad39956584447"
+		},
+		{
+			"checksumSHA1": "0H/VjT8w1CB702qWpbYMqr65Mf0=",
+			"path": "github.com/pkg/errors",
+			"revision": "ffb6e22f01932bf7ac35e0bad9be11f01d1c8685",
+			"revisionTime": "2019-01-09T06:16:28Z"
 		},
 		{
 			"checksumSHA1": "FPmvBmZd5rS9F/Wt5ksZwGxRxBU=",
