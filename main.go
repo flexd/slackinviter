@@ -238,26 +238,6 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		failedCaptcha.Add(1)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	captchaResponse := r.FormValue("g-recaptcha-response")
-	valid, err := captcha.Verify(captchaResponse, remoteIP)
-	if err != nil {
-		failedCaptcha.Add(1)
-		http.Error(w, "Error validating recaptcha.. Did you click it?", http.StatusPreconditionFailed)
-		return
-	}
-	if !valid {
-		invalidCaptcha.Add(1)
-		http.Error(w, "Invalid recaptcha", http.StatusInternalServerError)
-		return
-
-	}
 	successfulCaptcha.Add(1)
 	fname := r.FormValue("fname")
 	lname := r.FormValue("lname")
@@ -283,6 +263,27 @@ func handleInvite(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "You need to accept the code of conduct", http.StatusPreconditionFailed)
 		return
 	}
+	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		failedCaptcha.Add(1)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	captchaResponse := r.FormValue("g-recaptcha-response")
+	valid, err := captcha.Verify(captchaResponse, remoteIP)
+	if err != nil {
+		failedCaptcha.Add(1)
+		http.Error(w, "Error validating recaptcha.. Did you click it?", http.StatusPreconditionFailed)
+		return
+	}
+	if !valid {
+		invalidCaptcha.Add(1)
+		http.Error(w, "Invalid recaptcha", http.StatusInternalServerError)
+		return
+
+	}
+	// all is well, let's try to invite someone!
 	err = api.InviteToTeam(ourTeam.Domain(), fname, lname, email)
 	if err != nil {
 		log.Println("InviteToTeam error:", err)
