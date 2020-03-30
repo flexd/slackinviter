@@ -15,7 +15,7 @@ Visit https://invite.slack.golangbridge.org to see the real thing, or look at th
 
 ## Features
 * A username and email field.
-* Recaptha, meaning that you can verify your people signing up. This means no bot spam.
+* Recaptcha, meaning that you can verify your people signing up. This means no bot spam.
 * Picture of Slack chat logo.
 * Free hosting using Heroku.
 * Easy to set up, and quick and easy to use!
