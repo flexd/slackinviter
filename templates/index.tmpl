@@ -8,7 +8,7 @@
     <body>
         <div class="splash">
             <div class="logos">
-              {{ if not .MaintenanceMode  -}}
+              {{ if not .MaintenanceMode  }}
                 <div class="logo org"></div>
               {{ end -}}
                 <div class="logo slack"></div>
@@ -16,7 +16,7 @@
             {{ if .MaintenanceMode -}}
             <p class="status">We're experiencing issues with our invite form at this time.</p><br/>
             {{ if .SupportEmail -}}
-            <p>Please email <a href="sendto:{{ .SupportEmail }}">{{ .SupportEmail }}<a> to request an invite.</p>
+            <p>Please email <a href="mailto:{{ .SupportEmail }}">{{ .SupportEmail }}<a> to request an invite.</p>
             {{ else -}}
             <p>Please check back later!</p>
             {{ end -}}
