@@ -56,11 +56,13 @@ type Specification struct {
 	SlackToken     string `required:"true"`
 	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
 	EnforceHTTPS   bool
-	Debug          bool // toggles nlopes/slack client's debug flag
+	Debug          bool   // toggles nlopes/slack client's debug flag
+	Maintenance    bool   `required:"false"`
+	SupportEmail   string `required:"false" default:"support@gobridge.org"`
 }
 
 func init() {
-	var showUsage = flag.Bool("h", false, "Show usage")
+	showUsage := flag.Bool("h", false, "Show usage")
 	flag.Parse()
 
 	if *showUsage {
@@ -212,14 +214,18 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			SiteKey,
 			UserCount,
 			ActiveCount string
-			Team   *team
-			CocUrl string
+			Team            *team
+			CocUrl          string
+			MaintenanceMode bool
+			SupportEmail    string
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
 			activeUserCount.String(),
 			ourTeam,
 			c.CocUrl,
+			c.Maintenance,
+			c.SupportEmail,
 		},
 	)
 	if err != nil {

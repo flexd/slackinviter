@@ -8,9 +8,19 @@
     <body>
         <div class="splash">
             <div class="logos">
+              {{ if not .MaintenanceMode  -}}
                 <div class="logo org"></div>
+              {{ end -}}
                 <div class="logo slack"></div>
             </div>
+            {{ if .MaintenanceMode -}}
+            <p class="status">We're experiencing issues with our invite form at this time.</p><br/>
+            {{ if .SupportEmail -}}
+            <p>Please email <a href="sendto:{{ .SupportEmail }}">{{ .SupportEmail }}<a> to request an invite.</p>
+            {{ else -}}
+            <p>Please check back later!</p>
+            {{ end -}}
+            {{ else -}}
             <p>Join <b>{{.Team.Name}}</b> on Slack.</p>
             <p class="status">
                 <b class="active">{{.ActiveCount}}</b> users online now of <b class="total">{{.UserCount}}</b> registered.
@@ -32,12 +42,13 @@
             <p class="signin">
                 or <a href="https://{{.Team.Domain}}.slack.com" target="_top">sign in</a>.
             </p>
+            {{ end -}}
             <footer>
                 powered by <a href="http://github.com/flexd/slackinviter" target="_blank">slackinviter... totally ripping off the slackin css :-)</a>
             </footer>
             <style>
                 .splash {
-                    width: 300px;
+                    width: 400px;
                     margin: 200px auto;
                     text-align: center;
                     font-family: "Helvetica Neue", Helvetica, Arial
