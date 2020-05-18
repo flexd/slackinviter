@@ -23,7 +23,7 @@
             {{ else -}}
             <p>Join <b>{{.Team.Name}}</b> on Slack.</p>
             <p class="status">
-                <b class="active">{{.ActiveCount}}</b> users online now of <b class="total">{{.UserCount}}</b> registered.
+                <b class="total">{{.UserCount}}</b> registered gophers.
             </p>
             {{ if .InviteLink -}}
             <p><a href="{{ .InviteLink }}">{{ .InviteLink }}</a></p>
