@@ -1,8 +1,6 @@
-// +heroku goVersion go1.14
-
 module github.com/flexd/slackinviter
 
-go 1.14
+go 1.12
 
 require (
 	github.com/go-recaptcha/recaptcha v1.0.1
