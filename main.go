@@ -156,6 +156,15 @@ func updateFromSlack() time.Duration {
 	)
 
 	ctx := context.Background()
+
+	// load team info first as it's much faster than paginating user count
+	st, err := api.GetTeamInfo()
+	if err != nil {
+		log.Println("error polling slack for team info:", err)
+		return time.Minute
+	}
+	ourTeam.Update(st)
+
 	for p = api.GetUsersPaginated(
 		slack.GetUsersOptionPresence(true),
 		slack.GetUsersOptionLimit(500),
@@ -163,7 +172,9 @@ func updateFromSlack() time.Duration {
 		if err != nil {
 			if rle, ok := err.(*slack.RateLimitedError); ok {
 				fmt.Printf("Being Rate Limited by Slack: %s\n", rle)
-				time.Sleep(rle.RetryAfter)
+				// XXX(theckman): hotfix: not be working as expected
+				// time.Sleep(rle.RetryAfter)
+				time.Sleep(3020 * time.Millisecond)
 				continue
 			}
 		}
@@ -178,6 +189,7 @@ func updateFromSlack() time.Duration {
 		fmt.Println("User Count:", uCount)
 		fmt.Println("Active Count:", aCount)
 	}
+
 	userCount.Set(uCount)
 	activeUserCount.Set(aCount)
 	if err != nil && !p.Done(err) {
@@ -185,12 +197,6 @@ func updateFromSlack() time.Duration {
 		return time.Minute
 	}
 
-	st, err := api.GetTeamInfo()
-	if err != nil {
-		log.Println("error polling slack for team info:", err)
-		return time.Minute
-	}
-	ourTeam.Update(st)
 	return time.Hour
 }
 
