@@ -59,6 +59,7 @@ type Specification struct {
 	Debug          bool   // toggles nlopes/slack client's debug flag
 	Maintenance    bool   `required:"false"`
 	SupportEmail   string `required:"false" default:"support@gobridge.org"`
+	InviteLink     string
 }
 
 func init() {
@@ -224,6 +225,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			CocUrl          string
 			MaintenanceMode bool
 			SupportEmail    string
+			InviteLink      string
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
@@ -232,6 +234,7 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			c.CocUrl,
 			c.Maintenance,
 			c.SupportEmail,
+			c.InviteLink,
 		},
 	)
 	if err != nil {

@@ -25,6 +25,9 @@
             <p class="status">
                 <b class="active">{{.ActiveCount}}</b> users online now of <b class="total">{{.UserCount}}</b> registered.
             </p>
+            {{ if .InviteLink -}}
+            <p><a href="{{ .InviteLink }}">{{ .InviteLink }}</a></p>
+            {{ else -}}
             <form>
                 <input autofocus="true" class="form-item" name="email" placeholder="you@yourdomain.com" type="email">
                 <input autofocus="true" class="form-item" name="fname" placeholder="First name" type="text">
@@ -39,6 +42,7 @@
                 <div class="g-recaptcha" data-sitekey="{{.SiteKey}}"></div>
                 <button class="loading">Get my Invite</button>
             </form>
+            {{ end -}}
             <p class="signin">
                 or <a href="https://{{.Team.Domain}}.slack.com" target="_top">sign in</a>.
             </p>
@@ -48,7 +52,7 @@
             </footer>
             <style>
                 .splash {
-                    width: 400px;
+                    width: 600px;
                     margin: 200px auto;
                     text-align: center;
                     font-family: "Helvetica Neue", Helvetica, Arial
