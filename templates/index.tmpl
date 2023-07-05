@@ -2,23 +2,22 @@
     <head>
         <title>Join {{.Team.Name}} on Slack!</title>
         <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,user-scalable=no">
-        <link rel="shortcut icon" href="https://slack.global.ssl.fastly.net/272a/img/icons/favicon-32.png">
+        <link rel="shortcut icon" href="static/favicon.ico">
         <script src="https://www.google.com/recaptcha/api.js"></script>
     </head>
     <body>
         <div class="splash">
             <div class="logos">
                 <div class="logo org"></div>
-                <div class="logo slack"></div>
             </div>
             <p>Join <b>{{.Team.Name}}</b> on Slack.</p>
             <p class="status">
                 <b class="active">{{.ActiveCount}}</b> users online now of <b class="total">{{.UserCount}}</b> registered.
             </p>
             <form>
-                <input autofocus="true" class="form-item" name="email" placeholder="you@yourdomain.com" type="email">
+                <input type="hidden" name="email" type="email" value="{{ .SessionData.Email }}">
                 <input autofocus="true" class="form-item" name="fname" placeholder="First name" type="text">
-                <input autofocus="true" class="form-item" name="lname" placeholder="Last name" type="text">
+                <input autofocus="true" class="form-item" name="lname" placeholder="Last name" type="text" value="{{ .SessionData.Name }}">
                 <div class="coc">
                     <label>
                         <input name="coc" type="checkbox" value="1">
@@ -59,27 +58,15 @@
                 }
 
                 .logo {
-                    width: 48px;
-                    height: 48px;
+                    width: 96px;
+                    height: 96px;
                     display: inline-block;
                     background-size: cover;
                     margin-left: 0.3em
                 }
 
-                .logo.slack {
-                    background-image: url(static/slack.svg)
-                }
-
-                .logo.org::after {
-                    position: absolute;
-                    display: block;
-                    content: "+";
-                    top: 15px;
-                    left: 0;
-                    width: 300px;
-                    text-align: center;
-                    color: #D6D6D6;
-                    font: 15px Helvetica Neue
+                .logo.org {
+                    background-image: url(static/ory-logo.svg)
                 }
 
                 .coc {
@@ -148,7 +135,7 @@
                     color: #fff;
                     font-weight: bold;
                     border-width: 0;
-                    background: #E01563;
+                    background: #302e8e;
                     text-transform: uppercase;
                     cursor: pointer;
                     appearence: none;

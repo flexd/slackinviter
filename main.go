@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"expvar"
 	"flag"
 	"fmt"
@@ -18,10 +19,16 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	badge "github.com/narqo/go-badge"
 	"github.com/nlopes/slack"
+	ory "github.com/ory/client-go"
 	"github.com/paulbellamy/ratecounter"
 )
 
+type App struct {
+	ory *ory.APIClient
+}
+
 var indexTemplate = template.Must(template.New("index.tmpl").ParseFiles("templates/index.tmpl"))
+var redirectTemplate = template.Must(template.New("redirect.tmpl").ParseFiles("templates/redirect.tmpl"))
 
 var (
 	api     *slack.Client
@@ -48,6 +55,11 @@ var (
 
 var c Specification
 
+type SessionData struct {
+	Email string
+	Name  string
+}
+
 // Specification is the config struct
 type Specification struct {
 	Port           string `envconfig:"PORT" required:"true"`
@@ -55,6 +67,7 @@ type Specification struct {
 	CaptchaSecret  string `required:"true"`
 	SlackToken     string `required:"true"`
 	CocUrl         string `required:"false" default:"http://coc.golangbridge.org/"`
+	SessionData    json.RawMessage
 	EnforceHTTPS   bool
 	Debug          bool // toggles nlopes/slack client's debug flag
 }
@@ -114,17 +127,67 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	buf.WriteTo(w)
 }
 
+// save the cookies for any upstream calls to the Ory apis
+func withCookies(ctx context.Context, v string) context.Context {
+	return context.WithValue(ctx, "req.cookies", v)
+}
+
+func getCookies(ctx context.Context) string {
+	return ctx.Value("req.cookies").(string)
+}
+
+// save the session to display it on the dashboard
+func withSession(ctx context.Context, v *ory.Session) context.Context {
+	return context.WithValue(ctx, "req.session", v)
+}
+
+func getSession(ctx context.Context) *ory.Session {
+	return ctx.Value("req.session").(*ory.Session)
+}
+
 func main() {
 	go pollSlack()
+	config := ory.NewConfiguration()
+	config.Servers = ory.ServerConfigurations{{URL: "https://project.console.ory.sh"}}
+	app := &App{
+		ory: ory.NewAPIClient(config),
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/invite/", handleInvite)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	mux.HandleFunc("/", enforceHTTPSFunc(homepage))
+	mux.HandleFunc("/", app.sessionMiddleware(enforceHTTPSFunc(homepage)))
 	mux.HandleFunc("/badge.svg", handleBadge)
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 	err := http.ListenAndServe(":"+c.Port, handlers.CombinedLoggingHandler(os.Stdout, mux))
 	if err != nil {
 		log.Fatal(err.Error())
+	}
+}
+
+func (app *App) sessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		// this passes all request.Cookies to `ToSession` function
+		cookies := request.Header.Get("Cookie")
+		// check if we have a session
+		session, _, err := app.ory.FrontendApi.ToSession(request.Context()).Cookie(cookies).Execute()
+		if (err != nil && session == nil) || (err == nil && !*session.Active) {
+			// Render a separate page with a button to redirect the user to the login page
+			writer.WriteHeader(http.StatusOK)
+			writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+			err = redirectTemplate.Execute(writer, nil)
+			if err != nil {
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			return
+		}
+
+		ctx := withCookies(request.Context(), cookies)
+		ctx = withSession(ctx, session)
+
+		// continue to the requested page
+		next.ServeHTTP(writer, request.WithContext(ctx))
 	}
 }
 
@@ -205,6 +268,14 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	hitsPerMinute.Set(counter.Rate())
 	requests.Add(1)
 
+	// Get session data
+	session := getSession(r.Context())
+	traits := session.Identity.Traits.(map[string]interface{})
+	sessionData := &SessionData{
+		Email: traits["email"].(string),
+		Name:  traits["name"].(string),
+	}
+
 	var buf bytes.Buffer
 	err := indexTemplate.Execute(
 		&buf,
@@ -212,14 +283,16 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 			SiteKey,
 			UserCount,
 			ActiveCount string
-			Team   *team
-			CocUrl string
+			Team        *team
+			CocUrl      string
+			SessionData *SessionData
 		}{
 			c.CaptchaSitekey,
 			userCount.String(),
 			activeUserCount.String(),
 			ourTeam,
 			c.CocUrl,
+			sessionData,
 		},
 	)
 	if err != nil {
